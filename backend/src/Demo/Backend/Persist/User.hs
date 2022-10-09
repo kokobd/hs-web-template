@@ -9,7 +9,7 @@ import Demo.Backend.Persist.Prelude
 import Demo.Backend.Service.User
 
 runUserRepo ::
-  (IOE :> es, Reader (Pool SqlBackend) :> es) =>
+  (IOE :> es, SqlBackendPool :> es) =>
   Eff (UserRepo : es) a ->
   Eff es a
 runUserRepo = interpret $ \_ -> \case

@@ -6,9 +6,11 @@ module Demo.Backend.Service.User where
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
+import Demo.Backend.External.Logger
 import Effectful
 import Effectful.Dispatch.Dynamic (interpret)
 import Effectful.TH
+import Katip
 
 data User = User
   { _user_email :: !Text,
@@ -34,17 +36,18 @@ makeEffect ''UserRepo
 makeEffect ''UserService
 
 runUserService ::
-  UserRepo :> es =>
+  (UserRepo :> es, KatipE :> es, IOE :> es) =>
   Eff (UserService : es) a ->
   Eff es a
 runUserService = interpret $ \_ -> \case
-  Register email password ->
+  Register email password -> do
     createUser $
       User
         { _user_email = email,
           _user_hashedPassword = hashPassword password,
           _user_nickname = "" -- default nick name
         }
+    logLocM InfoS "created a new user successfully"
 
 hashPassword :: Text -> ByteString
 hashPassword = T.encodeUtf8 -- dummy implementation. we should generate a salt, and calculate sha512(salt <> password)

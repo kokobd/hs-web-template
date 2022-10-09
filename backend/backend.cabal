@@ -13,6 +13,7 @@ library
   exposed-modules:
     Demo.Backend.Main
     Demo.Backend.Server
+    Demo.Backend.Config
     Demo.Common.API
     Demo.Common.API.User
     Demo.Common.API.Prelude
@@ -22,6 +23,7 @@ library
     Demo.Backend.Persist.Prelude
     Demo.Backend.Persist.User
     Demo.Backend.External.SqlDatabase
+    Demo.Backend.External.Logger
   default-extensions:
     GADTs
     DataKinds
@@ -51,6 +53,10 @@ library
     , warp
     , resource-pool
     , unliftio-core
+    , filepath
+    , yaml
+    , katip
+    , monad-logger
     
 executable server
   main-is:          Main.hs

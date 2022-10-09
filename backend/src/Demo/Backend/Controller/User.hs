@@ -1,20 +1,26 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Demo.Backend.Controller.User where
 
+import Control.Monad.Except
 import Demo.Backend.Service.User (UserService)
 import qualified Demo.Backend.Service.User as UserService
 import Demo.Common.API.User (UserRegistrationForm (..))
 import Effectful
-import Effectful.Dispatch.Dynamic (interpret)
-import Effectful.TH
+import Effectful.Dispatch.Dynamic
 import Servant.API (NoContent (..))
+import Servant.Server (ServerError)
 
 data UserController :: Effect where
-  Register :: UserRegistrationForm -> UserController m NoContent
+  Register :: UserRegistrationForm -> UserController m (Either ServerError NoContent)
 
-makeEffect ''UserController
+type instance DispatchOf UserController = 'Dynamic
+
+register ::
+  UserController :> es =>
+  UserRegistrationForm ->
+  ExceptT ServerError (Eff es) NoContent
+register = ExceptT . send . Register
 
 runUserController ::
   UserService :> es =>
@@ -23,4 +29,4 @@ runUserController ::
 runUserController = interpret $ \_ -> \case
   Register UserRegistrationForm {..} -> do
     UserService.register _userRegistrationForm_email _userRegistrationForm_password
-    pure NoContent
+    pure $ Right NoContent
