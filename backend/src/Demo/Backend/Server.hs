@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -5,6 +6,7 @@ module Demo.Backend.Server
   ( Server,
     runServerEffect,
     startServer,
+    getWaiApplication,
   )
 where
 
@@ -18,9 +20,10 @@ import Demo.Common.API (API)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.TH
-import Katip
+import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Servant.Server as Servant
+import Katip
 
 server ::
   UserController :> es =>
@@ -32,25 +35,35 @@ apiProxy :: Proxy API
 apiProxy = Proxy
 
 data Server :: Effect where
+  GetWaiApplication :: Server m Application
   StartServer :: Server m ()
 
 makeEffect ''Server
 
-runServerEffect ::
-  forall es a.
+type Constraints es =
   ( IOE :> es,
     Config.Loader :> es,
     KatipE :> es,
     UserController :> es
-  ) =>
+  )
+
+runServerEffect ::
+  forall es a.
+  Constraints es =>
   Eff (Server : es) a ->
   Eff es a
 runServerEffect = interpret $ \_ -> \case
   StartServer -> do
     port <- Config.getConfig (Config._web_port . Config._app_web)
-    withUnliftStrategy (ConcUnlift Ephemeral Unlimited) $ withEffToIO $ \unlift -> do
-      let serverToHandler :: ExceptT Servant.ServerError (Eff es) x -> Servant.Handler x
-          serverToHandler = Servant.Handler . ExceptT . liftIO . unlift . runExceptT
-          waiApp = Servant.serve apiProxy (Servant.hoistServer apiProxy serverToHandler server)
-      unlift $ logLocM InfoS $ "server listening at " <> logStr (show port)
-      Warp.run port waiApp
+    waiApp <- getWaiApplication'
+    logLocM InfoS $ "listening at port " <> logStr (show port)
+    liftIO $ Warp.run port waiApp
+  GetWaiApplication -> getWaiApplication'
+
+getWaiApplication' :: forall es. Constraints es => Eff es Application
+getWaiApplication' = do
+  withUnliftStrategy (ConcUnlift Ephemeral Unlimited) $ withEffToIO $ \unlift -> do
+    let serverToHandler :: ExceptT Servant.ServerError (Eff es) x -> Servant.Handler x
+        serverToHandler = Servant.Handler . ExceptT . liftIO . unlift . runExceptT
+        waiApp = Servant.serve apiProxy (Servant.hoistServer apiProxy serverToHandler server)
+    pure waiApp

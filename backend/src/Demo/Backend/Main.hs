@@ -1,5 +1,6 @@
 module Demo.Backend.Main
   ( main,
+    initWaiApplication,
   )
 where
 
@@ -12,9 +13,13 @@ import Demo.Backend.Persist.User (runUserRepo)
 import Demo.Backend.Server
 import Demo.Backend.Service.User (UserRepo, UserService, runUserService)
 import Effectful
+import Network.Wai (Application)
 
 main :: IO ()
 main = runAppM startServer
+
+initWaiApplication :: IO Application
+initWaiApplication = runAppM getWaiApplication
 
 type AppM =
   Eff
