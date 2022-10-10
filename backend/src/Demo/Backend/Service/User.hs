@@ -10,7 +10,6 @@ import Demo.Backend.External.Logger
 import Effectful
 import Effectful.Dispatch.Dynamic (interpret)
 import Effectful.TH
-import Katip
 
 data User = User
   { _user_email :: !Text,
@@ -36,7 +35,7 @@ makeEffect ''UserRepo
 makeEffect ''UserService
 
 runUserService ::
-  (UserRepo :> es, KatipE :> es, IOE :> es) =>
+  (UserRepo :> es, Logger :> es) =>
   Eff (UserService : es) a ->
   Eff es a
 runUserService = interpret $ \_ -> \case
@@ -47,7 +46,7 @@ runUserService = interpret $ \_ -> \case
           _user_hashedPassword = hashPassword password,
           _user_nickname = "" -- default nick name
         }
-    logLocM InfoS "created a new user successfully"
+    withLogger $ logInfo "created a new user successfully"
 
 hashPassword :: Text -> ByteString
 hashPassword = T.encodeUtf8 -- dummy implementation. we should generate a salt, and calculate sha512(salt <> password)

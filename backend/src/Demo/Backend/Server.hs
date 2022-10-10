@@ -12,6 +12,7 @@ where
 
 import Control.Monad.Except
 import Data.Proxy (Proxy (..))
+import Data.String (fromString)
 import qualified Demo.Backend.Config as Config
 import Demo.Backend.Controller.User (UserController)
 import qualified Demo.Backend.Controller.User as UserController
@@ -23,7 +24,6 @@ import Effectful.TH
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Servant.Server as Servant
-import Katip
 
 server ::
   UserController :> es =>
@@ -43,7 +43,7 @@ makeEffect ''Server
 type Constraints es =
   ( IOE :> es,
     Config.Loader :> es,
-    KatipE :> es,
+    Logger :> es,
     UserController :> es
   )
 
@@ -56,7 +56,7 @@ runServerEffect = interpret $ \_ -> \case
   StartServer -> do
     port <- Config.getConfig (Config._web_port . Config._app_web)
     waiApp <- getWaiApplication'
-    logLocM InfoS $ "listening at port " <> logStr (show port)
+    withLogger . logInfo . fromString $ "listening at port " <> show port
     liftIO $ Warp.run port waiApp
   GetWaiApplication -> getWaiApplication'
 

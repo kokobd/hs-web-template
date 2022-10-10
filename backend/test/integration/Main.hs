@@ -1,3 +1,1 @@
-module Main where
-
-main = putStrLn "integration tests"
+{-# OPTIONS_GHC -F -pgmF tasty-discover #-}
