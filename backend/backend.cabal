@@ -92,6 +92,7 @@ test-suite integration
     , base
     , backend
     , tasty
-    , tasty-wai
-  build-tool-depends:
-    tasty-discover:tasty-discover
+    , tasty-hunit
+    , wai
+    , wai-extra
+    , http-types

@@ -1,13 +1,28 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module User where
 
+import Network.HTTP.Types.Method
+import Network.Wai
+import Network.Wai.Test
 import Test.Tasty
-import Test.Tasty.Wai
-import Demo.Backend.Main (runAppM)
-import Demo.Backend.Server (getWaiApplication)
+import Test.Tasty.HUnit
 
-test_registration :: TestTree
-test_registration = undefined
-  -- withResource initWaiApp releaseWaiApp $ \waiApp -> do
-  --   liftIO $ waiApp
-  --   testWai waiApp "hello" $ do
-  --     pure ()
+userTests :: IO Application -> TestTree
+userTests getApp =
+  testGroup
+    "User"
+    [ testCase "Registration" $ do
+        app <- getApp
+        withSession app $ do
+          resp <-
+            srequest $
+              SRequest
+                defaultRequest
+                  { pathInfo = ["api", "user"],
+                    requestMethod = methodPost,
+                    requestHeaders = [("Content-Type", "application/json")]
+                  }
+                "{\"email\": \"contact@zelinf.net\", \"password\": \"abcdef\"}"
+          assertStatus 200 resp
+    ]

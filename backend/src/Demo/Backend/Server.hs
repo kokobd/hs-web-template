@@ -41,11 +41,12 @@ data Server :: Effect where
 makeEffect ''Server
 
 type Constraints es =
-  ( IOE :> es,
-    Config.Loader :> es,
-    Logger :> es,
-    UserController :> es
-  )
+  '[ IOE,
+     Config.Loader,
+     Logger,
+     UserController
+   ]
+    :>> es
 
 runServerEffect ::
   forall es a.
